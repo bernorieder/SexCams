@@ -1,14 +1,3 @@
-# modify these values
-filename = 'videolist_zembla_273_2018_05_25-09_17_02.tab'			# filname with video ids
-colname = 'videoId'													# column storing video ids
-delimiter = '\t'													# delimiter, e.g. ',' for CSV or '\t' for TAB
-waittime = 10														# seconds browser waits before giving up
-sleeptime = [5,15]													# random seconds range before loading next video id
-headless = True														# select True if you want the browser window to be invisible (but not inaudible)
-
-
-#do not modify below
-from time import sleep
 import csv
 import os.path
 from os import path
@@ -17,8 +6,6 @@ from bs4 import BeautifulSoup
 
 url = 'https://chaturbate.com/'
 htmlfile = 'test.html'
-
-
 
 if path.exists(htmlfile):
 	fh = open(htmlfile,'r')
