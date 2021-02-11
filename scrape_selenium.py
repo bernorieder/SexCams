@@ -1,48 +1,96 @@
 import csv
+import datetime
+import time
 import os.path
 from os import path
 from selenium import webdriver
 from bs4 import BeautifulSoup
 
-url = 'https://chaturbate.com/'
-htmlfile = 'test.html'
+url = 'https://chaturbate.com'
+filename = 'files/test_' + datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 
-if path.exists(htmlfile):
-	fh = open(htmlfile,'r')
-	htmlcontent = fh.read()
-else:
-	driver = webdriver.Chrome()
+
+def getPage(url,counter):
+
 	driver.get(url)
+
+	"""
+	if path.exists(htmlfile):
+		fh = open(htmlfile,'r')
+		htmlcontent = fh.read()
+	else:
+	"""
 
 	htmlcontent = driver.page_source
 
-	fh = open(htmlfile,'w')
+	# write HTML file
+	fh = open(filename + '_' + str(counter) + '.html','w')
 	fh.write(htmlcontent)
 
-soup = BeautifulSoup(htmlcontent)
+	# parse HTML
+	soup = BeautifulSoup(htmlcontent)
 
-#print(soup.prettify())
+	print(soup.prettify())
 
-mylis = soup.findAll('li', {'class': 'room_list_room'})
-print(len(mylis))
+	mylis = soup.findAll('li', {'class': 'room_list_room'})
+	print(len(mylis))
+
+	# process each room box
+	for myli in mylis:
+
+		print(myli)
+
+		room = {}
+		room['name'] = myli.find('a').get('data-room')
+		room['subject'] = myli.find('ul', {'class': 'subject'}).text.replace('\n', '')
+		room['location'] = myli.find('li', {'class': 'location'}).text
+
+		tmp = myli.find('li', {'class': 'cams'}).text.replace(' ','')
+		tmp = tmp.split(',')
+		room['time'] = tmp[0].replace('hrs', '')
+		room['viewers'] = tmp[1].replace('viewers', '')
+
+		tmp = myli.find('div', {'class': 'title'}).find('span')
+		room['age'] = tmp.text
+		room['gender'] = tmp.attrs['class'][1]
+
+		rooms.append(room)
+
+	try:
+		# get the link to the next page from the next button
+		next_button = driver.find_element_by_class_name('next')
+		nextlink = next_button.get_attribute('href')
+	except:
+		print("captcha at " + str(counter))
+		return False
+
+	print(nextlink)
+
+	#if counter > 2:
+	#	return False
+
+	if nextlink.endswith('#'):
+		return False
+	else:
+		return nextlink
+
+
+driver = webdriver.Chrome()
 rooms = []
 
-for myli in mylis:
+counter = 0
+nextstep = url
 
-	print(myli)
+while nextstep is not False:
+	nextstep = getPage(nextstep,counter)
+	counter += 1
+	time.sleep(10)
 
-	room = {}
-	room['name'] = myli.find('a').get('data-room')
-	room['subject'] = myli.find('ul', {'class': 'subject'}).text.replace('\n', '')
-	room['location'] = myli.find('li', {'class': 'location'}).text
-	room['cams'] = myli.find('li', {'class': 'cams'}).text
-
-	rooms.append(room)
-
-print(rooms)
-
+csvfilename = filename + '.csv'
 keys = rooms[0].keys()
-with open('rooms.csv', 'w', newline='')  as output_file:
-    dict_writer = csv.DictWriter(output_file, keys)
-    dict_writer.writeheader()
-    dict_writer.writerows(rooms)
+with open(csvfilename, 'w', newline='')  as output_file:
+	dict_writer = csv.DictWriter(output_file, keys)
+	dict_writer.writeheader()
+	dict_writer.writerows(rooms)
+
+driver.quit()
