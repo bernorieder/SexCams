@@ -12,6 +12,8 @@ filename = 'files/test_' + datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 
 def getPage(url,counter):
 
+	global nopages
+
 	driver.get(url)
 
 	"""
@@ -30,7 +32,11 @@ def getPage(url,counter):
 	# parse HTML
 	soup = BeautifulSoup(htmlcontent)
 
-	print(soup.prettify())
+	#print(soup.prettify())
+
+	if len(rooms) == 0:
+		tmp = soup.findAll('a', {'class': 'endless_page_link'})
+		nopages = tmp[len(tmp)-2].text
 
 	mylis = soup.findAll('li', {'class': 'room_list_room'})
 	print(len(mylis))
@@ -41,18 +47,27 @@ def getPage(url,counter):
 		print(myli)
 
 		room = {}
+		room['position'] = len(rooms)
 		room['name'] = myli.find('a').get('data-room')
 		room['subject'] = myli.find('ul', {'class': 'subject'}).text.replace('\n', '')
 		room['location'] = myli.find('li', {'class': 'location'}).text
 
 		tmp = myli.find('li', {'class': 'cams'}).text.replace(' ','')
 		tmp = tmp.split(',')
-		room['time'] = tmp[0].replace('hrs', '')
 		room['viewers'] = tmp[1].replace('viewers', '')
+		room['time'] = tmp[0]
+		if "hrs" in room['time']:
+			room['time'] = round(float(room['time'].replace('hrs','')) * 60)
+		else:
+			room['time'] = float(room['time'].replace('mins','').replace('min', ''))
 
 		tmp = myli.find('div', {'class': 'title'}).find('span')
 		room['age'] = tmp.text
 		room['gender'] = tmp.attrs['class'][1]
+
+		room["thumbnail_label"] = myli.find('div', {'class': 'thumbnail_label'}).text
+
+		room['scrapetime'] = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 
 		rooms.append(room)
 
@@ -66,17 +81,15 @@ def getPage(url,counter):
 
 	print(nextlink)
 
-	#if counter > 2:
-	#	return False
-
 	if nextlink.endswith('#'):
 		return False
 	else:
 		return nextlink
 
-
+#script starts here
 driver = webdriver.Chrome()
 rooms = []
+nopages = 0
 
 counter = 0
 nextstep = url
@@ -84,9 +97,10 @@ nextstep = url
 while nextstep is not False:
 	nextstep = getPage(nextstep,counter)
 	counter += 1
+	#break
 	time.sleep(10)
 
-csvfilename = filename + '.csv'
+csvfilename = filename + '_' + nopages + 'pages.csv'
 keys = rooms[0].keys()
 with open(csvfilename, 'w', newline='')  as output_file:
 	dict_writer = csv.DictWriter(output_file, keys)
