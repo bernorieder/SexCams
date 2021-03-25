@@ -10,7 +10,7 @@ url = 'https://chaturbate.com'
 filename = 'files/test_' + datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 
 
-def getPage(url,counter):
+def getPage(url,counter,scrapetime):
 
 	global nopages
 
@@ -67,7 +67,7 @@ def getPage(url,counter):
 
 		room["thumbnail_label"] = myli.find('div', {'class': 'thumbnail_label'}).text
 
-		room['scrapetime'] = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+		room['scrapetime'] = scrapetime
 
 		rooms.append(room)
 
@@ -95,7 +95,7 @@ counter = 0
 nextstep = url
 
 while nextstep is not False:
-	nextstep = getPage(nextstep,counter)
+	nextstep = getPage(nextstep,counter,datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S'))
 	counter += 1
 	#break
 	time.sleep(10)
